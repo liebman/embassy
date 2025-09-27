@@ -7,6 +7,7 @@
 #![macro_use]
 
 use core::marker::PhantomData;
+
 use embassy_hal_internal::{Peri, PeripheralType};
 
 use crate::pac;
