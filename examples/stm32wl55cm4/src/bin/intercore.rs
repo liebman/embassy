@@ -37,7 +37,7 @@ static SHARED_DATA: MaybeUninit<SharedData> = MaybeUninit::uninit();
 #[unsafe(link_section = ".shared_data")]
 static LED_STATE: AtomicBool = AtomicBool::new(false);
 
-#[embassy_executor::main]
+#[embassy_executor::main(executor = "embassy_stm32::Executor", entry = "cortex_m_rt::entry")]
 async fn main(_spawner: Spawner) -> ! {
     // Initialize the CM4 core
     let p = embassy_stm32::init_primary(Config::default(), &SHARED_DATA);
@@ -49,12 +49,12 @@ async fn main(_spawner: Spawner) -> ! {
 
     info!("CM4: Starting main loop");
     loop {
-        Timer::after_millis(1500).await;
         tx.send(|| {
             let new_led_state = !LED_STATE.load(Ordering::Relaxed);
             info!("CM4: Send! New LED state: {}", new_led_state);
             LED_STATE.store(new_led_state, Ordering::Relaxed);
         })
         .await;
+        Timer::after_secs(15).await;
     }
 }

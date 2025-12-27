@@ -237,6 +237,8 @@ impl Executor {
                 #[cfg(not(stm32wb))]
                 if es.c1stopf() || _has_stopped2 {
                     // when we wake from any stop mode we need to re-initialize the rcc
+                    // Only the primary core sets the RCC config
+                    #[cfg(feature = "_core-cm4")]
                     crate::rcc::init(RCC_CONFIG.unwrap());
                     if _has_stopped2 {
                         // when we wake from STOP2, we need to re-initialize the time driver
@@ -254,6 +256,9 @@ impl Executor {
                     #[cfg(stm32wl5x)]
                     w.set_c2cssf(true);
                 });
+                // TODO: save the c2boot state before sleep so we can restore it after wakeup
+                #[cfg(all(stm32wl5x, feature = "_core-cm4"))]
+                crate::pac::PWR.cr4().modify(|w| w.set_c2boot(true));
             }
             get_driver().resume_time(cs);
 
@@ -398,6 +403,8 @@ impl Executor {
         compiler_fence(Ordering::Acquire);
 
         critical_section::with(|cs| {
+            // The second core does not set the RCC config so only check on the primary core
+            #[cfg(not(all(stm32wl5x, feature = "_core-cm0p")))]
             let _ = unsafe { RCC_CONFIG }?;
             let stop_mode = Self::stop_mode(cs)?;
             get_driver().pause_time(cs).ok()?;

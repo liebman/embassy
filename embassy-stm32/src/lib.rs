@@ -445,6 +445,11 @@ mod dual_core {
     pub fn init_secondary(shared_data: &'static MaybeUninit<SharedData>) -> Peripherals {
         loop {
             if let Some(p) = try_init_secondary(shared_data) {
+                // in low-power mode we let the main core to boot first to re-enable the clock configurations
+                // only the primary core sets the  RCC config so we disable the secondary core from booting until the primary core has done so
+                // TODO: save the c2boot state before sleep so we can restore it after wakeup instead of stopping it here!!!!!
+                #[cfg(all(stm32wl, feature = "low-power"))]
+                crate::pac::PWR.cr4().modify(|w| w.set_c2boot(false));
                 return p;
             }
         }

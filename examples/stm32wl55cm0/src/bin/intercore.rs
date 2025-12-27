@@ -23,18 +23,18 @@ static SHARED_DATA: MaybeUninit<SharedData> = MaybeUninit::uninit();
 #[unsafe(link_section = ".shared_data")]
 static LED_STATE: AtomicBool = AtomicBool::new(false);
 
-#[embassy_executor::task]
-async fn blink_heartbeat(mut led: Output<'static>) {
-    loop {
-        info!("CM0+ heartbeat");
-        led.set_level(Level::High);
-        Timer::after_millis(100).await;
-        led.set_level(Level::Low);
-        Timer::after_millis(900).await;
-    }
-}
+// #[embassy_executor::task]
+// async fn blink_heartbeat(mut led: Output<'static>) {
+//     loop {
+//         info!("CM0+ heartbeat");
+//         led.set_level(Level::High);
+//         Timer::after_millis(100).await;
+//         led.set_level(Level::Low);
+//         Timer::after_millis(4900).await;
+//     }
+// }
 
-#[embassy_executor::main]
+#[embassy_executor::main(executor = "embassy_stm32::Executor", entry = "cortex_m_rt::entry")]
 async fn main(_spawner: Spawner) -> ! {
     // Initialize the secondary core
     let p = embassy_stm32::init_secondary(&SHARED_DATA);
@@ -55,13 +55,13 @@ async fn main(_spawner: Spawner) -> ! {
     let (mut _tx, mut rx) = ch1;
 
     // Set up LED
-    let mut blue_led = Output::new(p.PB15, Level::Low, Speed::Low); // LD3 (heartbeat)
-    let red_led = Output::new(p.PB11, Level::High, Speed::Low);
-    _spawner.spawn(blink_heartbeat(red_led).unwrap());
+    // let mut blue_led = Output::new(p.PB15, Level::Low, Speed::Low); // LD3 (heartbeat)
+    // let red_led = Output::new(p.PB11, Level::High, Speed::Low);
+    // _spawner.spawn(blink_heartbeat(red_led).unwrap());
 
     loop {
         let state = rx.receive(|| Some(LED_STATE.load(Ordering::Relaxed))).await;
         info!("CM0+ Recieve: {}", state);
-        blue_led.set_level(if state { Level::High } else { Level::Low });
+        // blue_led.set_level(if state { Level::High } else { Level::Low });
     }
 }

@@ -143,7 +143,10 @@ impl SealedInstance for crate::peripherals::RTC {
     #[cfg(feature = "low-power")]
     cfg_if::cfg_if!(
         if #[cfg(any(stm32g4, stm32wl))] {
+            #[cfg(not(feature = "_core-cm0p"))]
             type WakeupInterrupt = crate::interrupt::typelevel::RTC_WKUP;
+            #[cfg(feature = "_core-cm0p")]
+            type WakeupInterrupt = crate::interrupt::typelevel::RTC_LSECSS;
         } else if #[cfg(any(stm32g0, stm32u0))] {
             type WakeupInterrupt = crate::interrupt::typelevel::RTC_TAMP;
         } else if #[cfg(any(stm32l5, stm32h5, stm32u5, stm32wba))] {
